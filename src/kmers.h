@@ -96,10 +96,15 @@ kmer_t ReverseComplement(kmer_t kMer, int k) {
 
 const char letters[4] {'A', 'C', 'G', 'T'};
 
+template <typename kmer_t>
+inline kmer_t AtIndex(kmer_t encoded, int k, int index) {
+    return ((encoded >> ((k - index - kmer_t(1)) << kmer_t(1))) & kmer_t(3));
+}
+
 /// Return the index-th nucleotide from the encoded k-mer.
 template <typename kmer_t>
 inline char NucleotideAtIndex(kmer_t encoded, int k, int index) {
-    return letters[(uint64_t)((encoded >> ((k - index - kmer_t(1)) << kmer_t(1))) & kmer_t(3))];
+    return letters[(uint64_t)AtIndex(encoded, k, index)];
 }
 
 /// Convert the encoded KMer representation to string.
@@ -113,4 +118,10 @@ std::string NumberToKMer(kmer_t encoded, int length) {
         encoded >>= 2;
     }
     return ret;
+}
+
+/// Return the given character in the correct case corresponding to the mask symbol.
+inline char Masked(char c, bool mask) {
+    int masked_difference = (c <= 'Z') - (int) mask;
+    return c + (char) masked_difference * ('a' - 'A');
 }

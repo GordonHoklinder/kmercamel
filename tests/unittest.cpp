@@ -8,6 +8,7 @@
 #include "ac_automaton_unittest.h"
 #include "lower_bound_unittest.h"
 #include "masks_unittest.h"
+#include "conversions_unittest.h"
 
 #include "gtest/gtest.h"
 
