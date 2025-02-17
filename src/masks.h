@@ -23,12 +23,6 @@ void PrintMaskConventionWarning() {
         "Ensure that for your masked superstring, k is always explicitly provided and not inferred from the mask." << std::endl;
 }
 
-/// Return the given character in the correct case corresponding to the mask symbol.
-inline char Masked(char c, bool mask) {
-    int masked_difference = (c <= 'Z') - (int) mask;
-    return c + (char) masked_difference * ('a' - 'A');
-}
-
 /// Reprint the sequence header as it was in the original fasta file.
 void ReprintSequenceHeader(kseq_t* masked_superstring, std::ostream &of) {
     of << ">";
@@ -247,13 +241,13 @@ int Optimize(kh_wrapper_t wrapper, kmer_t _, std::string &algorithm, std::string
     auto *kMers = wrapper.kh_init_set();
     AddKMers(kMers, wrapper, _, masked_superstring->seq.l, masked_superstring->seq.s, k, complements, true);
 
-    if (algorithm == "ones") {
+    if (algorithm == "maxone") {
         OptimizeOnes(masked_superstring, of, kMers, wrapper, _, k, complements, false);
-    } else if (algorithm == "zeros") {
+    } else if (algorithm == "minone") {
         OptimizeOnes(masked_superstring, of, kMers,  wrapper, _,k, complements, true);
-    } else if (algorithm == "runs") {
+    } else if (algorithm == "minrun") {
         OptimizeRuns(wrapper, _, masked_superstring, kMers, of, k, complements, false);
-    } else if (algorithm == "runsapprox") {
+    } else if (algorithm == "approxminrun") {
         OptimizeRuns(wrapper, _,masked_superstring, kMers, of, k, complements, true);
     } else {
         std::cerr << "Algorithm '" + algorithm + "' not recognized." << std::endl;

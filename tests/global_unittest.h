@@ -68,7 +68,7 @@ namespace {
         for (auto t : tests) {
             std::stringstream of;
 
-            SuperstringFromPath(t.path, t.kMers, of, t.k, t.complements);
+            SuperstringFromPath(wrapper, t.path, t.kMers, of, nullptr, t.k, t.complements);
 
             EXPECT_EQ(t.wantResult, of.str());
         }
@@ -146,7 +146,7 @@ namespace {
         for (auto &&t : tests) {
             std::stringstream of;
 
-            Global(wrapper, t.input, of, t.k, t.complements);
+            Global(wrapper, t.input, of, nullptr, t.k, t.complements);
 
             EXPECT_EQ(t.wantResult, of.str());
         }

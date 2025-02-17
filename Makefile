@@ -13,7 +13,7 @@ DATA=        data
 
 all: kmercamel
 
-test: cpptest converttest verify
+test: cpptest verify
 
 mask-verify:
 	./verify.py --k 13 --superstring_path $(DATA)/global-k13c.fa $(DATA)/spneumoniae.fa
@@ -32,9 +32,6 @@ cpptest: kmercameltest kmercameltest-large kmercameltest-extra-large
 	./kmercameltest
 	./kmercameltest-large
 	./kmercameltest-extra-large
-
-converttest: convert_superstring_unittest.py
-	./convert_superstring_unittest.py
 
 kmercamel: $(SRC)/main.cpp $(SRC)/$(wildcard *.cpp *.h *.hpp) src/version.h
 	./create-version.sh

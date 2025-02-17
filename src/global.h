@@ -153,8 +153,8 @@ overlapPath OverlapHamiltonianPath (kh_wrapper_t wrapper, std::vector<kmer_t> &k
 /// Construct the superstring and its mask from the given overlapPath path in the overlap graph.
 /// If reverse complements are considered and the overlapPath path contains two paths which are reverse complements of one another,
 /// return only one of them.
-template <typename kmer_t>
-void SuperstringFromPath(const overlapPath &hamiltonianPath, const std::vector<kmer_t> &kMers, std::ostream& of, const int k, const bool complements) {
+template <typename kmer_t, typename kh_wrapper_t >
+void SuperstringFromPath(kh_wrapper_t wrapper, const overlapPath &hamiltonianPath, const std::vector<kmer_t> &kMers, std::ostream& of, std::ostream *maskf, const int k, const bool complements) {
     size_t kMersCount = kMers.size() * (1 + complements);
     auto edgeFrom = hamiltonianPath.first;
     auto overlaps = hamiltonianPath.second;
@@ -167,26 +167,53 @@ void SuperstringFromPath(const overlapPath &hamiltonianPath, const std::vector<k
     size_t start = 0;
     for (; start < kMersCount && !isStart[start]; ++start);
 
-    kmer_t last = BitSuffix(access(kMers, start), k-1);
+    auto *kMersDict = wrapper.kh_init_set();
+
+    if (maskf != nullptr) {
+        for (auto kMer : kMers) {
+            int ret;
+            wrapper.kh_put_to_set(kMersDict, kMer, &ret);
+        }
+    }
+
+    kmer_t last = access(kMers, start);
     of << letters[(uint64_t)BitPrefix(access(kMers, start), k, 1)];
+    if (maskf != nullptr) (*maskf) << "1";
 
     // Move from the first k-mer to the last which has no successor.
     while(edgeFrom[start] != size_t(-1)) {
         int overlapLength = overlaps[start];
+        kmer_t current = access(kMers, edgeFrom[start]);
+        // If provided, output also mask maximizing ones.
+        if (maskf != nullptr) for (int j = 0; j < k - overlapLength; ++j) {
+            last <<= 1;
+            last |= AtIndex(current, k, overlapLength + j);
+            last = BitSuffix(last, k);
+            if (containsKMer(kMersDict, wrapper, last, k, complements)) {
+                (*maskf) << "1";
+            } else {
+                (*maskf) << "0";
+            }
+        }
         if (overlapLength != k - 1) {
             std::string unmaskedNucleotides = NumberToKMer(BitPrefix(last, k-1, k-1-overlapLength), k-1-overlapLength);
             std::transform(unmaskedNucleotides.begin(), unmaskedNucleotides.end(), unmaskedNucleotides.begin(), tolower);
             of << unmaskedNucleotides;
         }
-        last = BitSuffix(access(kMers, edgeFrom[start]), k-1);
+        last = access(kMers, edgeFrom[start]);
         of << letters[(uint64_t)BitPrefix(access(kMers, edgeFrom[start]), k, 1)];
         start = edgeFrom[start];
     }
 
     // Print the trailing k-1 characters.
+    last = BitSuffix(last, k-1);
     std::string unmaskedNucleotides = NumberToKMer(last, k-1);
     std::transform(unmaskedNucleotides.begin(), unmaskedNucleotides.end(), unmaskedNucleotides.begin(), tolower);
     of << unmaskedNucleotides;
+    if (maskf != nullptr) {
+        for (int j = 0; j < k - 1; ++j) (*maskf) << "0";
+        (*maskf) << std::endl;
+    }
 }
 
 /// Get the approximated shortest superstring of the given k-mers using the global greedy algorithm.
@@ -196,12 +223,12 @@ void SuperstringFromPath(const overlapPath &hamiltonianPath, const std::vector<k
 /// If this is the case, k-mers are expected not to contain both k-mer and its complement.
 /// Warning: this will destroy kMers.
 template <typename kmer_t, typename kh_wrapper_t>
-void Global(kh_wrapper_t wrapper, std::vector<kmer_t> &kMers, std::ostream& of, int k, bool complements) {
+void Global(kh_wrapper_t wrapper, std::vector<kmer_t> &kMers, std::ostream& of, std::ostream *maskf, int k, bool complements) {
     if (kMers.empty()) {
         throw std::invalid_argument("input cannot be empty");
     }
     auto hamiltonianPath = OverlapHamiltonianPath(wrapper, kMers, k, complements);
-    SuperstringFromPath(hamiltonianPath, kMers, of, k, complements);
+    SuperstringFromPath(wrapper, hamiltonianPath, kMers, of, maskf, k, complements);
 }
 
 // Undefine the access macro, so it does not interfere with other files.
